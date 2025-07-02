@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matemáticas para peques</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>¡A practicar matemáticas!</h1>
+        <p id="question-text"></p>
+
+        <div id="answer-input-container">
+            <input type="number" id="numeric-answer" placeholder="Tu respuesta numérica">
+            <div id="options-container">
+                </div>
+        </div>
+        
+        <button id="submit-answer">Comprobar</button>
+        <p id="feedback"></p>
+        <button id="next-question" style="display:none;">Siguiente pregunta</button>
+
+        <button id="toggle-history-button" style="margin-top: 20px;">Ver Historial</button>
+
+        <div id="history-section" style="display: none; text-align: left; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+            <h2>Historial de Preguntas</h2>
+            <div id="history-list">
+                </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
