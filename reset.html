@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recuperar contraseña</title>
+</head>
+<body>
+  <h1>Recuperación de contraseña</h1>
+  <p>Un momento por favor...</p>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabaseUrl = 'https://ftxqocujulmfncxsmqsw.supabase.co'
+    const supabaseKey = 'TU_CLAVE_PUBLICA' // ← Sustituye esto
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Detecta si el usuario viene desde un enlace de recuperación
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        const newPassword = prompt('Introduce tu nueva contraseña:')
+        if (newPassword) {
+          const { error } = await supabase.auth.updateUser({ password: newPassword })
+          if (error) {
+            alert('Error al actualizar la contraseña: ' + error.message)
+          } else {
+            alert('Contraseña actualizada con éxito. Ya puedes iniciar sesión.')
+            window.location.href = '/' // redirige a la página principal
+          }
+        } else {
+          alert('No se introdujo ninguna contraseña.')
+        }
+      }
+    })
+
+    // También detecta si el usuario ya tiene sesión iniciada
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      const { error } = await supabase.auth.updateUser({ password: prompt('Introduce tu nueva contraseña:') })
+      if (!error) {
+        alert('Contraseña actualizada con éxito. Ya puedes iniciar sesión.')
+        window.location.href = '/'
+      }
+    }
+  </script>
+</body>
+</html>
