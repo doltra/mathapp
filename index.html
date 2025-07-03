@@ -1,35 +1,134 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matemáticas para peques</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Flashcards con Supabase</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .card { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>¡A practicar matemáticas!</h1>
-        <p id="question-text"></p>
+  <h1>Flashcards</h1>
 
-        <div id="answer-input-container">
-            <input type="number" id="numeric-answer" placeholder="Tu respuesta numérica">
-            <div id="options-container">
-                </div>
-        </div>
-        
-        <button id="submit-answer">Comprobar</button>
-        <p id="feedback"></p>
-        <button id="next-question" style="display:none;">Siguiente pregunta</button>
+  <!-- Registro -->
+  <div>
+    <h3>Registrarse</h3>
+    <form id="signup-form">
+      <input type="email" id="signup-email" placeholder="Email" required>
+      <input type="password" id="signup-password" placeholder="Contraseña" required>
+      <button type="submit">Crear cuenta</button>
+    </form>
+  </div>
 
-        <button id="toggle-history-button" style="margin-top: 20px;">Ver Historial</button>
+  <!-- Login -->
+  <div>
+    <h3>Iniciar sesión</h3>
+    <form id="login-form">
+      <input type="email" id="login-email" placeholder="Email" required>
+      <input type="password" id="login-password" placeholder="Contraseña" required>
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
 
-        <div id="history-section" style="display: none; text-align: left; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-            <h2>Historial de Preguntas</h2>
-            <div id="history-list">
-                </div>
-        </div>
+  <div id="flashcard-container" style="display:none;">
+    <div class="card">
+      <p id="pregunta"></p>
+      <input type="text" id="respuesta" placeholder="Tu respuesta" />
+      <button id="enviar">Enviar</button>
     </div>
+    <p id="feedback"></p>
+  </div>
 
-    <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabase = window.supabase.createClient(
+      'https://ftxqocujulmfncxsmqsw.supabase.co',       // ⬅️ Sustituye con tu URL
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eHFvY3VqdWxtZm5jeHNtcXN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1MjEyMjIsImV4cCI6MjA2NzA5NzIyMn0.jzqCOmQX5R90E6Lm1GC_n7VQJkKgghOp4xnwbHMN418'                  // ⬅️ Sustituye con tu clave pública
+    );
+
+    let flashcards = [];
+    let flashcardActual = null;
+
+    // REGISTRO
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-password').value;
+
+      const { error } = await supabase.auth.signUp({ email, password });
+      alert(error ? error.message : 'Revisa tu email para confirmar la cuenta');
+    });
+
+    // LOGIN
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        alert(error.message);
+      } else {
+        alert('Login correcto');
+        iniciarJuego();
+      }
+    });
+
+    // INICIAR JUEGO
+    async function iniciarJuego() {
+      document.getElementById('flashcard-container').style.display = 'block';
+      await cargarFlashcards();
+      mostrarSiguiente();
+    }
+
+    async function cargarFlashcards() {
+      const { data, error } = await supabase.from('flashcards').select('*');
+      if (error) {
+        console.error(error);
+      } else {
+        flashcards = data;
+      }
+    }
+
+    function mostrarSiguiente() {
+      document.getElementById('feedback').textContent = '';
+      if (flashcards.length === 0) return;
+      const random = Math.floor(Math.random() * flashcards.length);
+      flashcardActual = flashcards[random];
+      document.getElementById('pregunta').textContent = flashcardActual.question;
+      document.getElementById('respuesta').value = '';
+    }
+
+    document.getElementById('enviar').addEventListener('click', async () => {
+      const respuestaUsuario = document.getElementById('respuesta').value.trim();
+      const correcta = respuestaUsuario.toLowerCase() === flashcardActual.answer.toLowerCase();
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (!user || userError) {
+        alert('No estás logueado');
+        return;
+      }
+
+      await supabase.from('user_answers').insert([
+        {
+          user_id: user.id,
+          flashcard_id: flashcardActual.id,
+          user_response: respuestaUsuario,
+          correct: correcta,
+        },
+      ]);
+
+      document.getElementById('feedback').textContent = correcta
+        ? '✅ ¡Correcto!'
+        : `❌ Incorrecto. Respuesta correcta: ${flashcardActual.answer}`;
+
+      setTimeout(mostrarSiguiente, 2000);
+    });
+  </script>
 </body>
 </html>
